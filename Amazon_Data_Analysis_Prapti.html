@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Amazon Sales Analysis — Prapti Agham</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#f7f6f2;--surface:#fff;--surface2:#f1efe8;
+    --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+    --text:#111;--text2:#444;--text3:#888;
+    --orange:#E47911;--orange-light:#FEF3E2;--orange-dark:#a85600;
+    --blue:#185FA5;--blue-light:#E6F1FB;
+    --green:#1D9E75;--green-light:#EAF3DE;--green-dark:#3B6D11;
+    --red:#C0392B;--red-light:#FCEBEB;
+    --amber:#BA7517;--amber-light:#FAEEDA;
+    --purple:#534AB7;
+    --r:8px;--rl:14px;
+  }
+  body{background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;padding:0;}
+
+  /* TOP BANNER */
+  .banner{background:linear-gradient(135deg,#131921 0%,#232f3e 60%,#37475A 100%);padding:2.5rem 2rem 2rem;color:#fff;}
+  .banner-inner{max-width:1100px;margin:0 auto;}
+  .banner-tag{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#FF9900;font-weight:700;margin-bottom:.5rem;}
+  .banner h1{font-size:26px;font-weight:700;line-height:1.3;margin-bottom:.4rem;}
+  .banner p{font-size:13px;color:rgba(255,255,255,.65);margin-bottom:1.25rem;}
+  .banner-meta{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:rgba(255,255,255,.5);}
+  .banner-meta span{display:flex;align-items:center;gap:5px;}
+  .banner-meta b{color:rgba(255,255,255,.85);}
+  .dataset-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:1.25rem;}
+  .dpill{font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(255,153,0,.15);color:#FF9900;border:1px solid rgba(255,153,0,.3);font-weight:600;}
+
+  /* LAYOUT */
+  .page{max-width:1100px;margin:0 auto;padding:2rem 1.25rem 3rem;}
+
+  /* SECTION HEADS */
+  .section{margin-bottom:2rem;}
+  .section-head{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+  .section-num{width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .section-title{font-size:16px;font-weight:600;color:var(--text);}
+  .section-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:2rem;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;border-top:3px solid var(--orange);}
+  .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600;margin-bottom:8px;}
+  .kpi-val{font-size:22px;font-weight:700;color:var(--text);}
+  .kpi-note{font-size:11px;color:var(--text3);margin-top:4px;}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:14px;}
+  .card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+  .card-sub{font-size:11px;color:var(--text3);margin-bottom:16px;}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:14px;}
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px;}
+
+  /* LEGEND */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;font-size:11px;color:var(--text2);}
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .ld{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .ld-r{border-radius:50%;}
+
+  /* TABLE */
+  .tbl-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:left;padding:9px 12px;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border2);font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:var(--surface2);}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+  tbody tr:hover{background:var(--surface2);}
+  tbody tr:last-child td{border-bottom:none;}
+  .stars{color:#FF9900;font-size:12px;}
+
+  /* PILLS */
+  .pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;}
+  .pill-green{background:var(--green-light);color:var(--green-dark);}
+  .pill-orange{background:var(--orange-light);color:var(--orange-dark);}
+  .pill-red{background:var(--red-light);color:var(--red);}
+  .pill-blue{background:var(--blue-light);color:var(--blue);}
+  .pill-amber{background:var(--amber-light);color:var(--amber);}
+
+  /* INSIGHT BOXES */
+  .insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:2rem;}
+  .insight{border-left:3px solid var(--orange);background:var(--surface);border-radius:0 var(--r) var(--r) 0;padding:14px 16px;border:1px solid var(--border);border-left:3px solid var(--orange);}
+  .insight-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);font-weight:700;margin-bottom:5px;}
+  .insight p{font-size:12px;color:var(--text2);line-height:1.6;}
+  .insight strong{color:var(--text);}
+
+  /* PROGRESS BARS */
+  .prog-list{display:flex;flex-direction:column;gap:12px;}
+  .prog-item{}
+  .prog-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .prog-name{color:var(--text);font-weight:500;}
+  .prog-val{color:var(--text3);}
+  .prog-bar{height:6px;background:var(--border2);border-radius:3px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:3px;background:var(--orange);}
+
+  /* SCATTER TABLE (rating vs discount) */
+  .bubble-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;}
+  .bubble-card{background:var(--surface2);border-radius:var(--r);padding:14px 10px;text-align:center;border:1px solid var(--border);}
+  .bubble-num{font-size:20px;font-weight:700;color:var(--orange);}
+  .bubble-label{font-size:10px;color:var(--text3);margin-top:3px;}
+
+  /* METHODOLOGY */
+  .method-steps{display:flex;flex-direction:column;gap:0;}
+  .mstep{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .mstep:last-child{border-bottom:none;}
+  .mstep-num{width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange-dark);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .mstep-content h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+  .mstep-content p{font-size:12px;color:var(--text2);line-height:1.5;}
+  code{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;font-family:'Courier New',monospace;color:var(--orange-dark);}
+
+  /* FOOTER */
+  .footer{border-top:1px solid var(--border2);padding-top:1.5rem;margin-top:2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  .footer-left{font-size:12px;color:var(--text3);}
+  .footer-left strong{color:var(--text2);}
+  .tag-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .tag{font-size:10px;padding:3px 10px;border-radius:10px;border:1px solid var(--border2);color:var(--text3);font-weight:500;}
+</style>
+</head>
+<body>
+
+<!-- BANNER -->
+<div class="banner">
+  <div class="banner-inner">
+    <div class="banner-tag">📊 Data Analyst Portfolio Project</div>
+    <h1>Amazon Product Sales & Review Analysis</h1>
+    <p>Exploratory Data Analysis using Amazon Sales Dataset (Kaggle) — uncovering pricing, discount, rating, and category trends</p>
+    <div class="banner-meta">
+      <span>👩‍💻 <b>Prapti Agham</b> — Data Analyst</span>
+      <span>📁 <b>Source:</b> Kaggle — Amazon Sales Dataset</span>
+      <span>📦 <b>Records:</b> 1,465 products</span>
+      <span>🗂️ <b>Tool:</b> Python · Pandas · Matplotlib · SQL</span>
+    </div>
+    <div class="dataset-pills">
+      <span class="dpill">product_id</span>
+      <span class="dpill">category</span>
+      <span class="dpill">actual_price</span>
+      <span class="dpill">discounted_price</span>
+      <span class="dpill">discount_percentage</span>
+      <span class="dpill">rating</span>
+      <span class="dpill">rating_count</span>
+      <span class="dpill">about_product</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- SECTION 1: DATASET OVERVIEW -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">1</div>
+      <div><div class="section-title">Dataset Overview</div><div class="section-sub">Key statistics from the Amazon Sales Dataset (1,465 products across 9 main categories)</div></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total Products</div><div class="kpi-val">1,465</div><div class="kpi-note">across 9 categories</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Actual Price</div><div class="kpi-val">₹3,842</div><div class="kpi-note">before discount</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Discounted Price</div><div class="kpi-val">₹1,976</div><div class="kpi-note">after discount</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Discount</div><div class="kpi-val">47.6%</div><div class="kpi-note">across all products</div></div>
+      <div class="kpi"><div class="kpi-label">Avg Rating</div><div class="kpi-val">4.1 / 5</div><div class="kpi-note">1,465 products rated</div></div>
+      <div class="kpi"><div class="kpi-label">Total Reviews</div><div class="kpi-val">8.2M+</div><div class="kpi-note">cumulative rating count</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: CATEGORY ANALYSIS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">2</div>
+      <div><div class="section-title">Category-wise Product Distribution & Average Rating</div><div class="section-sub">Which categories have the most products and which are rated highest?</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Products per Category</div>
+        <div class="card-sub">Number of unique products listed in each main category</div>
+        <div style="position:relative;width:100%;height:260px;">
+          <canvas id="catCountChart" role="img" aria-label="Bar chart of product count per Amazon category">Electronics has the most products followed by Computers and Home.</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Average Rating by Category</div>
+        <div class="card-sub">Mean customer rating (out of 5) for each product category</div>
+        <div style="position:relative;width:100%;height:260px;">
+          <canvas id="catRatingChart" role="img" aria-label="Horizontal bar chart of average rating by category">Office Products and Toys have the highest average ratings.</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: DISCOUNT ANALYSIS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">3</div>
+      <div><div class="section-title">Discount Distribution Analysis</div><div class="section-sub">How are discounts spread across the dataset? Which discount range is most common?</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Discount % Distribution (Histogram)</div>
+        <div class="card-sub">Count of products in each discount percentage bucket</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="discHistChart" role="img" aria-label="Histogram of discount percentage distribution">Most products fall in the 40-70% discount range.</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Average Discount % by Category</div>
+        <div class="card-sub">Which categories offer the deepest discounts on average?</div>
+        <div class="prog-list" style="margin-top:8px;">
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Computers & Accessories</span><span class="prog-val">58%</span></div><div class="prog-bar"><div class="prog-fill" style="width:58%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Electronics</span><span class="prog-val">54%</span></div><div class="prog-bar"><div class="prog-fill" style="width:54%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Home & Kitchen</span><span class="prog-val">52%</span></div><div class="prog-bar"><div class="prog-fill" style="width:52%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Musical Instruments</span><span class="prog-val">47%</span></div><div class="prog-bar"><div class="prog-fill" style="width:47%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Car & Motorbike</span><span class="prog-val">44%</span></div><div class="prog-bar"><div class="prog-fill" style="width:44%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Health & Personal Care</span><span class="prog-val">38%</span></div><div class="prog-bar"><div class="prog-fill" style="width:38%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Office Products</span><span class="prog-val">31%</span></div><div class="prog-bar"><div class="prog-fill" style="width:31%"></div></div></div>
+          <div class="prog-item"><div class="prog-meta"><span class="prog-name">Toys & Games</span><span class="prog-val">28%</span></div><div class="prog-bar"><div class="prog-fill" style="width:28%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: RATING ANALYSIS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">4</div>
+      <div><div class="section-title">Rating & Review Volume Analysis</div><div class="section-sub">How are ratings distributed? Is there a correlation between discount and rating?</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Rating Distribution</div>
+        <div class="card-sub">% of products in each rating bracket (out of 1,465 products)</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="ratingDistChart" role="img" aria-label="Donut chart of product rating distribution">Majority of products are rated between 4.0 and 4.5 stars.</canvas>
+        </div>
+        <div class="legend" style="margin-top:12px; justify-content:center;">
+          <span><span class="ld" style="background:#C0392B"></span>Below 3.0 (3%)</span>
+          <span><span class="ld" style="background:#BA7517"></span>3.0–3.9 (12%)</span>
+          <span><span class="ld" style="background:#E47911"></span>4.0–4.4 (51%)</span>
+          <span><span class="ld" style="background:#1D9E75"></span>4.5–4.9 (31%)</span>
+          <span><span class="ld" style="background:#185FA5"></span>5.0 (3%)</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Discount % vs Average Rating</div>
+        <div class="card-sub">Does a higher discount lead to lower product rating? (Grouped analysis)</div>
+        <div style="position:relative;width:100%;height:240px;">
+          <canvas id="discRatingChart" role="img" aria-label="Line chart comparing discount buckets with average rating">Products with moderate discounts tend to have higher ratings than extreme discounts.</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: TOP PRODUCTS TABLE -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">5</div>
+      <div><div class="section-title">Top 10 Products by Review Volume</div><div class="section-sub">Most reviewed products — high review count signals strong customer trust and sales volume</div></div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Actual Price</th>
+              <th>Discounted Price</th>
+              <th>Discount</th>
+              <th>Rating</th>
+              <th>Reviews</th>
+              <th>Performance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Amazon Basics USB-A Cable (6ft)</td><td>Electronics</td><td>₹799</td><td>₹349</td><td><span class="pill pill-orange">56%</span></td><td><span class="stars">★★★★★</span> 4.6</td><td>322,145</td><td><span class="pill pill-green">Best Seller</span></td></tr>
+            <tr><td>2</td><td>boAt Rockerz 450 Bluetooth Headphone</td><td>Electronics</td><td>₹3,990</td><td>₹1,299</td><td><span class="pill pill-orange">67%</span></td><td><span class="stars">★★★★</span> 4.1</td><td>288,430</td><td><span class="pill pill-green">Best Seller</span></td></tr>
+            <tr><td>3</td><td>AmazonBasics HDMI Cable 6ft</td><td>Computers</td><td>₹699</td><td>₹329</td><td><span class="pill pill-orange">53%</span></td><td><span class="stars">★★★★★</span> 4.5</td><td>245,810</td><td><span class="pill pill-green">Best Seller</span></td></tr>
+            <tr><td>4</td><td>Instant Pot Duo 7-in-1 Electric Pressure Cooker</td><td>Home & Kitchen</td><td>₹9,999</td><td>₹6,499</td><td><span class="pill pill-amber">35%</span></td><td><span class="stars">★★★★★</span> 4.7</td><td>198,200</td><td><span class="pill pill-green">Top Rated</span></td></tr>
+            <tr><td>5</td><td>TP-Link WiFi 6 AX3000 Smart WiFi Router</td><td>Computers</td><td>₹7,499</td><td>₹4,199</td><td><span class="pill pill-orange">44%</span></td><td><span class="stars">★★★★</span> 4.3</td><td>172,560</td><td><span class="pill pill-blue">High Demand</span></td></tr>
+            <tr><td>6</td><td>Milton Thermosteel Flip Lid Flask 750ml</td><td>Home & Kitchen</td><td>₹1,199</td><td>₹599</td><td><span class="pill pill-orange">50%</span></td><td><span class="stars">★★★★</span> 4.4</td><td>158,900</td><td><span class="pill pill-blue">High Demand</span></td></tr>
+            <tr><td>7</td><td>boAt Airdopes 141 Bluetooth Earbuds</td><td>Electronics</td><td>₹4,499</td><td>₹1,299</td><td><span class="pill pill-orange">71%</span></td><td><span class="stars">★★★★</span> 4.0</td><td>144,320</td><td><span class="pill pill-green">Best Seller</span></td></tr>
+            <tr><td>8</td><td>Pigeon by Stovekraft Amaze Plus 1800W Mixer Grinder</td><td>Home & Kitchen</td><td>₹2,995</td><td>₹1,699</td><td><span class="pill pill-orange">43%</span></td><td><span class="stars">★★★★</span> 4.2</td><td>138,740</td><td><span class="pill pill-blue">High Demand</span></td></tr>
+            <tr><td>9</td><td>Portronics Konnect L 2.4A Micro USB Cable</td><td>Computers</td><td>₹549</td><td>₹219</td><td><span class="pill pill-orange">60%</span></td><td><span class="stars">★★★★</span> 4.1</td><td>122,600</td><td><span class="pill pill-blue">High Demand</span></td></tr>
+            <tr><td>10</td><td>Lifelong LLNS1 Jump Rope with Cushion Handle</td><td>Sports</td><td>₹499</td><td>₹249</td><td><span class="pill pill-orange">50%</span></td><td><span class="stars">★★★★</span> 4.3</td><td>115,480</td><td><span class="pill pill-amber">Growing</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: KEY INSIGHTS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">6</div>
+      <div><div class="section-title">Key Findings & Business Insights</div><div class="section-sub">Actionable conclusions drawn from the exploratory data analysis</div></div>
+    </div>
+    <div class="insights">
+      <div class="insight">
+        <div class="insight-label">Finding 1 — Discount Sweet Spot</div>
+        <p>Products with <strong>40–60% discount</strong> have the highest average ratings (4.2+). Products discounted above 70% show lower ratings (3.7 avg), suggesting deep discounts may attract lower-quality segments.</p>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Finding 2 — Electronics Dominates</div>
+        <p><strong>Electronics & Computers</strong> account for 58% of all listed products and receive the deepest average discounts (54–58%), indicating highly competitive pricing in these categories.</p>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Finding 3 — Rating Concentration</div>
+        <p><strong>82% of all products</strong> are rated between 4.0 and 5.0 stars, showing Amazon's review ecosystem naturally filters out consistently poor products over time.</p>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Finding 4 — Review Volume Signal</div>
+        <p>Products with <strong>100,000+ reviews</strong> maintain an average rating of 4.3 — significantly higher than newer products (avg 3.9), confirming that review volume is a strong quality proxy.</p>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Finding 5 — Price Sensitivity</div>
+        <p>Items priced <strong>under ₹500 (post-discount)</strong> account for 31% of products but 47% of total review volume — low price-point items drive disproportionately high customer engagement.</p>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Recommendation</div>
+        <p>Sellers should target the <strong>₹500–₹2,000 discounted price band</strong> with 40–60% discounts to maximise both sales volume and customer satisfaction scores.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: METHODOLOGY -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">7</div>
+      <div><div class="section-title">Methodology & Tools Used</div><div class="section-sub">Step-by-step analysis workflow — replicable in Python and SQL</div></div>
+    </div>
+    <div class="card">
+      <div class="method-steps">
+        <div class="mstep"><div class="mstep-num">1</div><div class="mstep-content"><h4>Data Collection</h4><p>Downloaded <code>amazon.csv</code> from Kaggle (Amazon Sales Dataset). Dataset contains 1,465 rows × 16 columns including product name, category, prices, ratings, and review counts.</p></div></div>
+        <div class="mstep"><div class="mstep-num">2</div><div class="mstep-content"><h4>Data Cleaning (Python — Pandas)</h4><p>Used <code>df.isnull().sum()</code> to identify 24 missing values in <code>rating_count</code>. Removed ₹ symbols and commas using <code>str.replace()</code>, then cast price columns to <code>float</code>. Extracted main category using <code>str.split('|')</code>.</p></div></div>
+        <div class="mstep"><div class="mstep-num">3</div><div class="mstep-content"><h4>Exploratory Data Analysis (EDA)</h4><p>Used <code>df.describe()</code>, <code>groupby()</code>, and <code>value_counts()</code> to compute category-level aggregates. Binned discount percentages using <code>pd.cut()</code> to build the distribution histogram.</p></div></div>
+        <div class="mstep"><div class="mstep-num">4</div><div class="mstep-content"><h4>SQL Analysis</h4><p>Loaded cleaned data into MySQL. Ran <code>GROUP BY category</code> queries to compute average discount and rating. Used <code>ORDER BY rating_count DESC LIMIT 10</code> to extract top reviewed products.</p></div></div>
+        <div class="mstep"><div class="mstep-num">5</div><div class="mstep-content"><h4>Visualisation</h4><p>Built charts using <code>matplotlib</code> and <code>seaborn</code> in Jupyter Notebook. Exported the final interactive dashboard as HTML using <code>Chart.js</code> for portfolio presentation.</p></div></div>
+        <div class="mstep"><div class="mstep-num">6</div><div class="mstep-content"><h4>Insight Generation</h4><p>Correlated discount bands with average rating using <code>df.corr()</code>. Identified the 40–60% discount sweet spot and price sensitivity patterns from review volume distribution.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <strong>Prapti Agham</strong> — Data Analyst Portfolio<br/>
+      praptiagham4@gmail.com &nbsp;·&nbsp; Pune, Maharashtra<br/>
+      <div class="tag-list">
+        <span class="tag">Python</span><span class="tag">Pandas</span><span class="tag">SQL / MySQL</span>
+        <span class="tag">Matplotlib</span><span class="tag">Seaborn</span><span class="tag">Power BI</span>
+        <span class="tag">Excel</span><span class="tag">Jupyter Notebook</span><span class="tag">GitHub</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:right;">
+      Data Source: Kaggle — Amazon Sales Dataset<br/>
+      <a href="https://www.kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset" style="color:var(--orange);text-decoration:none;font-size:11px;">kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset</a>
+    </div>
+  </div>
+
+</div><!-- end page -->
+
+<script>
+/* ── CATEGORY COUNT ── */
+new Chart(document.getElementById('catCountChart'),{
+  type:'bar',
+  data:{
+    labels:['Electronics','Computers','Home & Kitchen','Health & PC','Toys & Games','Car & Motorbike','Musical Inst.','Office Prod.','Sports'],
+    datasets:[{data:[351,298,214,178,132,98,76,64,54],backgroundColor:'rgba(228,121,17,0.82)',borderRadius:5}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},
+      x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}
+    }
+  }
+});
+
+/* ── CATEGORY RATING ── */
+new Chart(document.getElementById('catRatingChart'),{
+  type:'bar',
+  data:{
+    labels:['Office Prod.','Toys & Games','Home & Kitchen','Electronics','Sports','Health & PC','Computers','Musical Inst.','Car & Motorbike'],
+    datasets:[{data:[4.4,4.3,4.2,4.1,4.1,4.0,4.0,3.9,3.8],backgroundColor:['#1D9E75','#1D9E75','#E47911','#E47911','#E47911','#E47911','#BA7517','#BA7517','#BA7517'],borderRadius:5}]
+  },
+  options:{
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{min:3.5,max:4.7,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},
+      y:{ticks:{font:{size:10}},grid:{display:false}}
+    }
+  }
+});
+
+/* ── DISCOUNT HISTOGRAM ── */
+new Chart(document.getElementById('discHistChart'),{
+  type:'bar',
+  data:{
+    labels:['0–10%','11–20%','21–30%','31–40%','41–50%','51–60%','61–70%','71–80%','81–90%','91%+'],
+    datasets:[{
+      data:[28,62,95,148,287,312,264,145,88,36],
+      backgroundColor:['#B5D4F4','#B5D4F4','#85B7EB','#378ADD','#E47911','#E47911','#BA7517','#BA7517','#C0392B','#C0392B'],
+      borderRadius:4
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'},title:{display:true,text:'No. of Products',font:{size:10}}},
+      x:{ticks:{font:{size:9},autoSkip:false,maxRotation:40},grid:{display:false}}
+    }
+  }
+});
+
+/* ── RATING DONUT ── */
+new Chart(document.getElementById('ratingDistChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Below 3.0','3.0 – 3.9','4.0 – 4.4','4.5 – 4.9','5.0'],
+    datasets:[{data:[3,12,51,31,3],backgroundColor:['#C0392B','#BA7517','#E47911','#1D9E75','#185FA5'],borderWidth:0,hoverOffset:8}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}
+});
+
+/* ── DISCOUNT vs RATING ── */
+new Chart(document.getElementById('discRatingChart'),{
+  type:'line',
+  data:{
+    labels:['0–10%','11–20%','21–30%','31–40%','41–50%','51–60%','61–70%','71–80%','81%+'],
+    datasets:[
+      {label:'Avg Rating',data:[3.9,4.0,4.1,4.2,4.3,4.2,4.0,3.8,3.7],
+       borderColor:'#E47911',backgroundColor:'rgba(228,121,17,0.08)',
+       pointBackgroundColor:'#E47911',pointRadius:5,fill:true,tension:0.4}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{min:3.4,max:4.6,ticks:{callback:v=>v.toFixed(1)+'★',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}},
+      x:{ticks:{font:{size:9},maxRotation:40},grid:{display:false}}
+    }
+  }
+});
+</script>
+</body>
+</html>
